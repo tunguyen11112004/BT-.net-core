@@ -20,6 +20,12 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+if (app.Environment.IsDevelopment())
+{
+    // Gọi DbInitializer
+    DbInitializer.Seed(app);
+}
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 

@@ -135,3 +135,4 @@ C:\Users\ADMIN\RiderProjects\T2502ENetcore\BTNetcore\obj\Debug\net8.0\ref\BTNetc
 C:\Users\ADMIN\RiderProjects\T2502ENetcore\BTNetcore\bin\Debug\net8.0\AngleSharp.dll
 C:\Users\ADMIN\RiderProjects\T2502ENetcore\BTNetcore\bin\Debug\net8.0\AngleSharp.Css.dll
 C:\Users\ADMIN\RiderProjects\T2502ENetcore\BTNetcore\bin\Debug\net8.0\HtmlSanitizer.dll
+C:\Users\ADMIN\RiderProjects\T2502ENetcore\BTNetcore\obj\Debug\net8.0\BTNetcore.sourcelink.json

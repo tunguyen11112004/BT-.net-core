@@ -1,12 +1,31 @@
-@model IEnumerable<BTNetcore.Models.Course>
+@model BTNetcore.ViewModels.CourseFilterViewModel
 
 <a asp-action="Create" class="btn btn-primary">Thêm mới</a>
-
+<form asp-action="Index" method="get" class="row g-3 mb-4 p-3 bg-light border rounded">
+    <div class="col-md-3">
+        <input type="text" name="Keyword" value="@Model.Keyword" class="form-control" placeholder="Tìm theo tên khóa học">
+    </div>
+    <div class="col-md-3">
+        <input type="text" name="DateRange" value="@Model.DateRange" id="daterange" class="form-control" placeholder="Chọn khoảng thời gian">
+    </div>
+    <div class="col-md-3">
+        <select name="SortOrder" class="form-select">
+            <option value="name_asc" selected="@(Model.SortOrder == "name_asc")">Tên (A-Z)</option>
+            <option value="name_desc" selected="@(Model.SortOrder == "name_desc")">Tên (Z-A)</option>
+            <option value="date_desc" selected="@(Model.SortOrder == "date_desc")">Mới nhất</option>
+            <option value="date_asc" selected="@(Model.SortOrder == "date_asc")">Cũ nhất</option>
+        </select>
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">Tìm kiếm</button>
+        <a asp-action="Index" class="btn btn-secondary w-100">Reset</a>
+    </div>
+</form>
 <table class="table">
     <thead>
     <tr>
+        <th>Danh mục</th>
         <th>Tên khóa học</th>
-        <th>Tiêu đề</th>
         <th>Mô tả</th>
         <th>Nội dung chi tiết</th>
         <th>Image</th>
@@ -18,7 +37,7 @@
     </tr>
     </thead>
     <tbody>
-    @foreach (var item in Model)
+    @foreach (var item in Model.Courses)
     {
         <tr>
             <td>@item.Category.Name</td>
@@ -36,13 +55,13 @@
                 }
                 else if (item.Status == 0)
                 {
-                    <span class="text-danger">Đã ngưng hoạt động</span>
+                    <span class="text-danger">Đã kết thúc</span>
                 }
             </td>
             <td>
                 <a asp-action="Edit" asp-route-id="@item.Id" >Sửa</a> |
-                <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline" onsubmit="return confirm('Bạn có chắc chắn muốn Ngưng hoạt động khóa học này không?');">
-                    <button type="submit" class="btn btn-link text-danger">Xóa</button>
+                <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline" onsubmit="return confirm('Bạn có chắc chắn muốn kết thúc khóa học này không?');">
+                    <button type="submit" class="btn btn-link text-danger">Kết thúc khóa học</button>
                 </form>
             </td>
         </tr>

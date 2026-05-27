@@ -1,5 +1,6 @@
 using BTNetcore.Data;
 using BTNetcore.Models;
+using BTNetcore.ViewModels;
 using Ganss.Xss;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -15,12 +16,42 @@ public class CourseController : Controller
     
     
     // GET
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(CourseFilterViewModel filter)
     {
-        var courses = await _context.Courses
-            .Include(c => c.Category) // Yêu cầu lấy kèm dữ liệu Category
+        var query = _context.Courses.AsQueryable();
+
+        if (!string.IsNullOrEmpty(filter.Keyword))
+        {
+            /*query = query.Where(u => u.Title.Contains(filter.Keyword));*/
+            var keyword = $"%{filter.Keyword.Trim()}%"; // Tạo chuỗi dạng %từ_khóa%
+            query = query.Where(u => EF.Functions.Like(u.Title, keyword));
+        }
+
+        if (!string.IsNullOrEmpty(filter.DateRange))
+        {
+            var dates = filter.DateRange.Split('-').Select(d => d.Trim()).ToArray();
+            if (dates.Length == 2)
+            {
+                var startDate = DateTime.ParseExact(dates[0], "MM/dd/yyyy", null);
+                var endDate = DateTime.ParseExact(dates[1], "MM/dd/yyyy", null);
+                query = query.Where(u => u.StartDate >= startDate && u.StartDate <= endDate);
+            }
+        }
+
+        query = filter.SortOrder switch
+        {
+            "name_desc" => query.OrderByDescending(u => u.Title),
+            "date_asc" => query.OrderBy(u => u.StartDate),
+            "date_desc" => query.OrderByDescending(u => u.StartDate),
+            _ => query.OrderBy(u => u.Title),
+        };
+        
+        filter.Courses = await query.ToListAsync();
+        
+        filter.Categories = await _context.Courses
+            .Include(c => c.Category)
             .ToListAsync();
-        return View(courses);
+        return View(filter);
     }
     
 
