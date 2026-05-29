@@ -1,4 +1,5 @@
 using BTNetcore.Data;
+using BTNetcore.Helpers;
 using BTNetcore.Models;
 using BTNetcore.ViewModels;
 using Ganss.Xss;
@@ -16,17 +17,19 @@ public class CourseController : Controller
     
     
     // GET
-    public async Task<IActionResult> Index(CourseFilterViewModel filter)
+    public async Task<IActionResult> Index(CourseFilterViewModel filter, int? pageIndex)
     {
-        var query = _context.Courses.AsQueryable();
+        var query = _context.Courses.Include(c => c.Category).AsQueryable();
 
+        // 1. Logic Lọc
         if (!string.IsNullOrEmpty(filter.Keyword))
         {
             /*query = query.Where(u => u.Title.Contains(filter.Keyword));*/
             var keyword = $"%{filter.Keyword.Trim()}%"; // Tạo chuỗi dạng %từ_khóa%
             query = query.Where(u => EF.Functions.Like(u.Title, keyword));
         }
-
+        
+        // 2. Logic Thời gian
         if (!string.IsNullOrEmpty(filter.DateRange))
         {
             var dates = filter.DateRange.Split('-').Select(d => d.Trim()).ToArray();
@@ -38,6 +41,7 @@ public class CourseController : Controller
             }
         }
 
+        // 3. Logic Sắp xếp
         query = filter.SortOrder switch
         {
             "name_desc" => query.OrderByDescending(u => u.Title),
@@ -46,11 +50,20 @@ public class CourseController : Controller
             _ => query.OrderBy(u => u.Title),
         };
         
-        filter.Courses = await query.ToListAsync();
+        // 4. Thực thi Phân trang
+        int pageSize = 10; // Số lượng bản ghi trên mỗi trang
+        
+        /*filter.Courses = await query.ToListAsync();
         
         filter.Categories = await _context.Courses
             .Include(c => c.Category)
-            .ToListAsync();
+            .ToListAsync();*/
+        
+        filter.Courses = await PaginatedList<Course>.CreateAsync(query.AsNoTracking(), pageIndex ?? 1, pageSize);
+
+        // Nếu bạn vẫn muốn giữ cái dòng lấy tất cả khóa học gốc phân trang:
+        var allCoursesQuery = _context.Courses.Include(c => c.Category).AsQueryable();
+        filter.Categories = await PaginatedList<Course>.CreateAsync(allCoursesQuery.AsNoTracking(), pageIndex ?? 1, pageSize);
         return View(filter);
     }
     
@@ -100,14 +113,39 @@ public class CourseController : Controller
     }
     
     [HttpPost]
-    public async Task<IActionResult> Delete(int id)
+    [ValidateAntiForgeryToken] // Nên bổ sung để bảo mật (Cần gửi kèm Token nếu dùng AJAX phức tạp hơn)
+    public async Task<IActionResult> Delete(List<int> ids)
     {
-        var course = await _context.Courses.FindAsync(id);
-        if (course != null)
+        /*var course = await _context.Courses.FindAsync(id);*/
+        /*if (course != null)
         {
             course.Status = 0;
             await _context.SaveChangesAsync();
         }
-        return RedirectToAction(nameof(Index));
+        return RedirectToAction(nameof(Index));*/
+        if (ids == null || ids.Count == 0)
+        {
+            return Json(new { success = false, message = "Không có tài khoản nào được chọn." });
+        }
+        
+        try
+        {
+            
+            var courseToDelete = await _context.Courses.Where(u => ids.Contains(u.Id)).ToListAsync();
+
+            if (courseToDelete.Any())
+            {
+                foreach(var course in courseToDelete) {
+                    course.Status = 0;
+                }
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = $"Đã kết thúc khóa học thành công {courseToDelete.Count} khóa học." });
+            }
+            return Json(new { success = false, message = "Không tìm thấy dữ liệu phù hợp." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Lỗi: " + ex.Message });
+        }
     }
 }

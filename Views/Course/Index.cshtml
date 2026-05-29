@@ -1,6 +1,7 @@
 @model BTNetcore.ViewModels.CourseFilterViewModel
 
 <a asp-action="Create" class="btn btn-primary">Thêm mới</a>
+<!-- lọc -->
 <form asp-action="Index" method="get" class="row g-3 mb-4 p-3 bg-light border rounded">
     <div class="col-md-3">
         <input type="text" name="Keyword" value="@Model.Keyword" class="form-control" placeholder="Tìm theo tên khóa học">
@@ -21,50 +22,172 @@
         <a asp-action="Index" class="btn btn-secondary w-100">Reset</a>
     </div>
 </form>
-<table class="table">
-    <thead>
-    <tr>
-        <th>Danh mục</th>
-        <th>Tên khóa học</th>
-        <th>Mô tả</th>
-        <th>Nội dung chi tiết</th>
-        <th>Image</th>
-        <th>Price</th>
-        <th>Ngày bắt đầu</th>
-        <th>Ngày kết thúc</th>
-        <th>Trạng thái</th>
-        <th>Thao tác</th>
-    </tr>
-    </thead>
-    <tbody>
-    @foreach (var item in Model.Courses)
-    {
+
+<div class="mb-3">
+    <!-- Nút xóa hàng loạt (mặc định ẩn hoặc disable) -->
+    <button type="button" id="btnDeleteSelected" class="btn btn-danger" disabled>
+        <i class="bi bi-trash"></i> Xóa các mục đã chọn (<span id="selectedCount">0</span>)
+    </button>
+</div>
+
+<!-- Bảng -->
+<div class="table-responsive">
+    <table class="table table-bordered table-hover">
+        <thead>
         <tr>
-            <td>@item.Category.Name</td>
-            <td>@item.Title</td>
-            <td>@item.Description</td>
-            <td>@Html.Raw(@item.Content)</td>
-            <td><img src="@item.ImageUrl" alt=""></td>
-            <td>@item.Price</td>
-            <td>@item.StartDate</td>
-            <td>@item.EndDate</td>
-            <td>
-                @if (item.Status == 1)
-                {
-                    <span class="text-success">Hoạt động</span>
-                }
-                else if (item.Status == 0)
-                {
-                    <span class="text-danger">Đã kết thúc</span>
-                }
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id" >Sửa</a> |
-                <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline" onsubmit="return confirm('Bạn có chắc chắn muốn kết thúc khóa học này không?');">
-                    <button type="submit" class="btn btn-link text-danger">Kết thúc khóa học</button>
-                </form>
-            </td>
+            <th style="width: 40px;">
+                <input type="checkbox" id="checkAll" class="form-check-input" />
+            </th>
+            <th>Danh mục</th>
+            <th>Tên khóa học</th>
+            <th>Mô tả</th>
+            <th>Nội dung chi tiết</th>
+            <th>Image</th>
+            <th>Price</th>
+            <th>Ngày bắt đầu</th>
+            <th>Ngày kết thúc</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
         </tr>
-    }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.Courses)
+        {
+            <tr>
+                <td>
+                    <input type="checkbox" class="course-checkbox form-check-input" value="@item.Id" />
+                </td>
+                <td>@item.Category?.Name</td>
+                <td>@item.Title</td>
+                <td>@item.Description</td>
+                <td>@Html.Raw(@item.Content)</td>
+                <td><img src="@item.ImageUrl" alt=""></td>
+                <td>@item.Price</td>
+                <td>@item.StartDate</td>
+                <td>@item.EndDate</td>
+                <td>
+                    @if (item.Status == 1)
+                    {
+                        <span class="text-success">Hoạt động</span>
+                    }
+                    else if (item.Status == 0)
+                    {
+                        <span class="text-danger">Đã kết thúc</span>
+                    }
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">Sửa</a> |
+                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline" onsubmit="return confirm('Bạn có chắc chắn muốn kết thúc khóa học này không?');">
+                        <button type="submit" class="btn btn-link text-danger">Kết thúc khóa học</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<!-- Thanh phân trang -->
+@{
+    var prevDisabled = !Model.Courses.HasPreviousPage ? "disabled" : "";
+    var nextDisabled = !Model.Courses.HasNextPage ? "disabled" : "";
+}
+
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        <li class="page-item @prevDisabled">
+            <a class="page-link" 
+               asp-action="Index" 
+               asp-route-pageIndex="@(Model.Courses.PageIndex - 1)"
+               asp-route-Keyword="@Model.Keyword"
+               asp-route-DateRange="@Model.DateRange"
+               asp-route-SortOrder="@Model.SortOrder">Trước</a>
+        </li>
+
+        @for (int i = 1; i <= Model.Courses.TotalPages; i++)
+        {
+            <li class="page-item @(i == Model.Courses.PageIndex ? "active" : "")">
+                <a class="page-link" 
+                   asp-action="Index" 
+                   asp-route-pageIndex="@i"
+                   asp-route-Keyword="@Model.Keyword"
+                   asp-route-DateRange="@Model.DateRange"
+                   asp-route-SortOrder="@Model.SortOrder">@i</a>
+            </li>
+        }
+
+        <li class="page-item @nextDisabled">
+            <a class="page-link" 
+               asp-action="Index" 
+               asp-route-pageIndex="@(Model.Courses.PageIndex + 1)"
+               asp-route-Keyword="@Model.Keyword"
+               asp-route-DateRange="@Model.DateRange"
+               asp-route-SortOrder="@Model.SortOrder">Sau</a>
+        </li>
+    </ul>
+</nav>
+
+@section Scripts {
+    <script>
+        $(function () {
+            // 1. Xử lý Check All
+            $('#checkAll').click(function () {
+                $('.course-checkbox').prop('checked', this.checked);
+                updateDeleteButton();
+            });
+
+            // 2. Xử lý khi nhấn từng checkbox lẻ
+            $('.course-checkbox').click(function () {
+                if (!this.checked) {
+                    $('#checkAll').prop('checked', false);
+                }
+                if ($('.course-checkbox:checked').length === $('.course-checkbox').length) {
+                    $('#checkAll').prop('checked', true);
+                }
+                updateDeleteButton();
+            });
+
+            // 3. Cập nhật trạng thái nút Xóa
+            function updateDeleteButton() {
+                var selectedIds = $('.course-checkbox:checked').length;
+                $('#selectedCount').text(selectedIds);
+                if (selectedIds > 0) {
+                    $('#btnDeleteSelected').prop('disabled', false);
+                } else {
+                    $('#btnDeleteSelected').prop('disabled', true);
+                }
+            }
+
+            // 4. Xử lý sự kiện nút Xóa (Sử dụng AJAX)
+            $('#btnDeleteSelected').click(function () {
+                var selectedIds = [];
+                $('.course-checkbox:checked').each(function () {
+                    selectedIds.push($(this).val());
+                });
+
+                if (confirm("Bạn có chắc chắn muốn kết thúc " + selectedIds.length + " khóa học đã chọn?")) {
+                    var token = $('input[name="__RequestVerificationToken"]').val()
+                    $.ajax({
+                        url: '@Url.Action("Delete", "Course")',
+                        type: 'POST',
+                        data: { 
+                            ids: selectedIds,
+                            __RequestVerificationToken: token
+                        },
+                        success: function (response) {
+                            if (response.success) {
+                                alert(response.message);
+                                location.reload(); // Tải lại trang để cập nhật danh sách
+                            } else {
+                                alert("Có lỗi xảy ra: " + response.message);
+                            }
+                        },
+                        error: function () {
+                            alert("Không thể kết nối đến máy chủ.");
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+}
